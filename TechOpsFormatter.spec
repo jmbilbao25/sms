@@ -5,7 +5,7 @@ a = Analysis(
     ['SMS.py'],
     pathex=[],
     binaries=[],
-    datas=[('banner.png', '.')],
+    datas=[('C:\\Users\\Bilbao-PC\\OneDrive\\Desktop\\sms\\banner.png', '.')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
@@ -35,5 +35,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=['app_icon.ico'],
+    icon=['C:\\Users\\Bilbao-PC\\OneDrive\\Desktop\\sms\\app_icon.ico'],
 )
