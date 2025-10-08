@@ -1,0 +1,9 @@
+Phone,Name,Date
+639#123#456#789,John Doe - Hash separators,2024-01-01
+639*123*456*789,Jane Smith - Asterisk separators,2024-01-02
+639@123@456@789,Mike Johnson - At separators,2024-01-03
+639$123$456$789,Alice Brown - Dollar separators,2024-01-04
+639%123%456%789,Bob Wilson - Percent separators,2024-01-05
+091#234#567#890,Helen Clark - 09 with hash,2024-01-06
+092*345*678*901,Frank Miller - 09 with asterisk,2024-01-07
+093@456@789@012,George Taylor - 09 with at,2024-01-08

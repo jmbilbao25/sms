@@ -1,0 +1,21 @@
+Phone,Name,Date,Notes
+639123456789.0,John Doe - Basic .0,2024-01-01,Should remove .0
+639234567890.5,Jane Smith - Decimal .5,2024-01-02,Should truncate
+639345678901.25,Mike Johnson - Decimal .25,2024-01-03,Should truncate
+639456789012.99,Alice Brown - Decimal .99,2024-01-04,Should truncate
+639567890123.000,Bob Wilson - Multiple zeros,2024-01-05,Should remove .000
+639678901234.999,Helen Clark - Multiple nines,2024-01-06,Should truncate
+639789012345.000000,Frank Miller - Many zeros,2024-01-07,Should remove all
+639890123456.999999,George Taylor - Many nines,2024-01-08,Should truncate
+639901234567.000000001,Isabel Garcia - Tiny decimal,2024-01-09,Should truncate
+639012345678.999999999,Jack Wilson - Almost 1,2024-01-10,Should truncate
+091234567890.0,Karen Lee - 09 with .0,2024-01-11,Should remove .0
+092345678901.5,Lisa Anderson - 09 with .5,2024-01-12,Should truncate
+093456789012.25,Mark Thompson - 09 with .25,2024-01-13,Should truncate
+094567890123.99,Nancy Rodriguez - 09 with .99,2024-01-14,Should truncate
+095678901234.000,Oliver Martinez - 09 with .000,2024-01-15,Should remove .000
+096789012345.999,Patricia Garcia - 09 with .999,2024-01-16,Should truncate
+097890123456.000000,Quentin Brown - 09 many zeros,2024-01-17,Should remove all
+098901234567.999999,Rachel Davis - 09 many nines,2024-01-18,Should truncate
+099012345678.000000001,Samuel Wilson - 09 tiny decimal,2024-01-19,Should truncate
+090123456789.999999999,Tina Johnson - 09 almost 1,2024-01-20,Should truncate

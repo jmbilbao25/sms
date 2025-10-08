@@ -1,0 +1,9 @@
+Phone,Name,Date,Notes
+639123456789.000000,John Doe - Many trailing zeros,2024-01-01,Should remove .000000
+639234567890.999999,Jane Smith - Many trailing nines,2024-01-02,Should truncate to 639234567890
+639345678901.000001,Mike Johnson - Very small decimal,2024-01-03,Should truncate to 639345678901
+639456789012.5,Alice Brown - Half decimal,2024-01-04,Should truncate to 639456789012
+091234567890.000000,Helen Clark - 09 with many zeros,2024-01-05,Should become 091234567890
+092345678901.999999,Frank Miller - 09 with many nines,2024-01-06,Should become 092345678901
+0,Empty Row,2024-01-07,Should be detected as empty
+0.0,Empty Row 2,2024-01-08,Should be detected as empty

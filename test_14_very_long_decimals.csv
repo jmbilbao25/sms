@@ -1,0 +1,8 @@
+Phone,Name,Date
+639123456789.123456789,John Doe - Very long decimal,2024-01-01
+639234567890.987654321,Jane Smith - Long decimal with 9s,2024-01-02
+639345678901.000000001,Mike Johnson - Tiny decimal,2024-01-03
+639456789012.999999999,Alice Brown - Almost 1 decimal,2024-01-04
+639567890123.123456789012345,Bob Wilson - Extremely long,2024-01-05
+091234567890.123456789,Helen Clark - 09 with long decimal,2024-01-06
+092345678901.987654321,Frank Miller - 09 with long decimal,2024-01-07

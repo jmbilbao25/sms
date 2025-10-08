@@ -1,0 +1,8 @@
+Phone,Name,Date
+639/123/456/789,John Doe - Slash separators,2024-01-01
+639/234/567/890,Jane Smith - Slash separators,2024-01-02
+639/345/678/901,Mike Johnson - Slash separators,2024-01-03
+0912/345/678/9,Alice Brown - 09 with slashes,2024-01-04
+0923/456/789/0,Bob Wilson - 09 with slashes,2024-01-05
+639/456/789/012.0,Helen Clark - Slashes with decimal,2024-01-06
+0912/345/678/9.5,Frank Miller - 09 slashes decimal,2024-01-07

@@ -1,0 +1,10 @@
+Phone,Name,Date
+639-123-456-789,John Doe - Dashes only,2024-01-01
+639.123.456.789,Jane Smith - Dots only,2024-01-02
+639 123 456 789,Mike Johnson - Spaces only,2024-01-03
+639-123.456 789,Alice Brown - Mixed separators,2024-01-04
+639.123-456 789,Bob Wilson - Mixed separators 2,2024-01-05
+0912-345-678-9,Helen Clark - 09 with dashes,2024-01-06
+0912.345.678.9,Frank Miller - 09 with dots,2024-01-07
+0912 345 678 9,George Taylor - 09 with spaces,2024-01-08
+0912-345.678 9,Isabel Garcia - 09 mixed separators,2024-01-09

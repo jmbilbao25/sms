@@ -1,0 +1,7 @@
+Phone,Name,Date
+0639123456789,John Doe - Leading zero 63,2024-01-01
+00639123456789,Jane Smith - Double leading zero,2024-01-02
+000639123456789,Mike Johnson - Triple leading zero,2024-01-03
+639123456789,Alice Brown - Normal 63,2024-01-04
+0639123456789.0,Bob Wilson - Leading zero with decimal,2024-01-05
+00639123456789.5,Helen Clark - Double zero with decimal,2024-01-06

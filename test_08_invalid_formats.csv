@@ -1,0 +1,9 @@
+Phone,Name,Date,Notes
+123456789,John Doe - Too short,2024-01-01,Should fail validation
+6391234567890,Jane Smith - Too long,2024-01-02,Should fail validation
+081234567890,Mike Johnson - Wrong prefix 08,2024-01-03,Should fail validation
+621234567890,Alice Brown - Wrong prefix 62,2024-01-04,Should fail validation
+63912345678a,Bob Wilson - Contains letter,2024-01-05,Should fail validation
+0912345678b,Helen Clark - 09 with letter,2024-01-06,Should fail validation
+639123456789.0,Frank Miller - Valid format,2024-01-07,Should pass validation
+091234567890.0,George Taylor - Valid 09 format,2024-01-08,Should pass validation

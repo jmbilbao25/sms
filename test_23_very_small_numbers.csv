@@ -1,0 +1,9 @@
+Phone,Name,Date
+639123456789.0000000001,John Doe - Very small decimal,2024-01-01
+639234567890.000000001,Jane Smith - Small decimal,2024-01-02
+639345678901.00000001,Mike Johnson - Small decimal,2024-01-03
+639456789012.0000001,Alice Brown - Small decimal,2024-01-04
+639567890123.000001,Bob Wilson - Small decimal,2024-01-05
+091234567890.0000000001,Helen Clark - 09 very small,2024-01-06
+092345678901.000000001,Frank Miller - 09 small decimal,2024-01-07
+093456789012.00000001,George Taylor - 09 small decimal,2024-01-08

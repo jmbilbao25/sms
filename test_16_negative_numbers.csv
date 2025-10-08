@@ -1,0 +1,7 @@
+Phone,Name,Date
+-639123456789,John Doe - Negative 63,2024-01-01
+-091234567890,Jane Smith - Negative 09,2024-01-02
+-639234567890.5,Mike Johnson - Negative with decimal,2024-01-03
+-091234567890.25,Alice Brown - Negative 09 with decimal,2024-01-04
+639345678901,Frank Miller - Positive (should work),2024-01-05
+091234567890,Helen Clark - Positive 09 (should work),2024-01-06

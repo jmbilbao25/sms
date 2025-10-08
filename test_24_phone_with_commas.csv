@@ -1,0 +1,8 @@
+Phone,Name,Date
+639,123,456,789,John Doe - Commas in phone,2024-01-01
+639,234,567,890,Jane Smith - Commas in phone,2024-01-02
+639,345,678,901,Mike Johnson - Commas in phone,2024-01-03
+091,234,567,890,Alice Brown - 09 with commas,2024-01-04
+092,345,678,901,Bob Wilson - 09 with commas,2024-01-05
+639,456,789,012.0,Helen Clark - Commas with decimal,2024-01-06
+091,234,567,890.5,Frank Miller - 09 commas decimal,2024-01-07

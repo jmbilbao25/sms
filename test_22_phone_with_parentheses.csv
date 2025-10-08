@@ -1,0 +1,9 @@
+Phone,Name,Date
+(639) 123-456-789,John Doe - Parentheses 63,2024-01-01
+(639) 234.567.890,Jane Smith - Parentheses with dots,2024-01-02
+(639) 345 678 901,Mike Johnson - Parentheses with spaces,2024-01-03
+(0912) 345-678-9,Alice Brown - Parentheses 09,2024-01-04
+(0912) 345.678.9,Bob Wilson - Parentheses 09 dots,2024-01-05
+(0912) 345 678 9,Helen Clark - Parentheses 09 spaces,2024-01-06
+(639) 456-789-012.0,Frank Miller - Parentheses with decimal,2024-01-07
+(0912) 345-678-9.5,George Taylor - Parentheses 09 decimal,2024-01-08

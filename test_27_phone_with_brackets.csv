@@ -1,0 +1,9 @@
+Phone,Name,Date
+[639] 123-456-789,John Doe - Square brackets,2024-01-01
+[639] 234.567.890,Jane Smith - Brackets with dots,2024-01-02
+[639] 345 678 901,Mike Johnson - Brackets with spaces,2024-01-03
+[0912] 345-678-9,Alice Brown - 09 with brackets,2024-01-04
+[0912] 345.678.9,Bob Wilson - 09 brackets dots,2024-01-05
+[0912] 345 678 9,Helen Clark - 09 brackets spaces,2024-01-06
+[639] 456-789-012.0,Frank Miller - Brackets with decimal,2024-01-07
+[0912] 345-678-9.5,George Taylor - 09 brackets decimal,2024-01-08

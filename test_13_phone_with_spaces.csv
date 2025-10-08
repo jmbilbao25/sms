@@ -1,0 +1,8 @@
+Phone,Name,Date
+639 123 456 789,John Doe - Spaces in phone,2024-01-01
+639-234-567-890,Jane Smith - Dashes in phone,2024-01-02
+639.345.678.901,Mike Johnson - Dots in phone,2024-01-03
+639 (456) 789-012,Alice Brown - Parentheses and dash,2024-01-04
++63 912 345 6789,Bob Wilson - Plus sign and spaces,2024-01-05
+0912 345 6789,Helen Clark - 09 with spaces,2024-01-06
+0923-456-7890,Frank Miller - 09 with dashes,2024-01-07

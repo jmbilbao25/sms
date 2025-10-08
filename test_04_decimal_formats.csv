@@ -1,0 +1,8 @@
+Phone,Name,Date
+639123456789.0,John Doe - Whole number with .0,2024-01-01
+639234567890.0,Jane Smith - Another .0 format,2024-01-02
+639345678901.5,Mike Johnson - Decimal .5,2024-01-03
+639456789012.25,Alice Brown - Decimal .25,2024-01-04
+639567890123.99,Bob Wilson - Decimal .99,2024-01-05
+091234567890.0,Helen Clark - 09 format with .0,2024-01-06
+092345678901.5,Frank Miller - 09 format with .5,2024-01-07

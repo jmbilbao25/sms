@@ -1,0 +1,8 @@
+Phone,Name,Date
+"639123456789",John Doe - Quoted phone,2024-01-01
+'639234567890',Jane Smith - Single quoted,2024-01-02
+"639345678901",Mike Johnson - Double quoted,2024-01-03
+'091234567890',Alice Brown - 09 single quoted,2024-01-04
+"092345678901",Bob Wilson - 09 double quoted,2024-01-05
+'639456789012.0',Helen Clark - Quoted with decimal,2024-01-06
+"091234567890.5",Frank Miller - 09 quoted decimal,2024-01-07

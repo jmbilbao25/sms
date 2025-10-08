@@ -468,13 +468,74 @@ class CSVFormatterApp:
         else:
             messagebox.showerror("Error", "Please drop a CSV file")
     
+    def detect_column_type(self, series):
+        """Detect if a column contains numeric data"""
+        if series is None or len(series) == 0:
+            return "unknown"
+        
+        # Get non-null values
+        non_null_values = series.dropna()
+        if len(non_null_values) == 0:
+            return "empty"
+        
+        # Check if all non-null values can be converted to numbers
+        numeric_count = 0
+        for value in non_null_values:
+            try:
+                float(str(value))
+                numeric_count += 1
+            except ValueError:
+                pass
+        
+        # If more than 80% of values are numeric, consider it a numeric column
+        if numeric_count / len(non_null_values) >= 0.8:
+            return "numeric"
+        else:
+            return "text"
+
     def format_phone_number(self, phone):
         """Format phone number to digits only"""
         if pd.isna(phone):
             return ""
         # Convert to string and remove all non-digit characters
         phone_str = str(phone)
+        
+        # Check if original string starts with 0 (for 09 format preservation)
+        starts_with_zero = phone_str.startswith('0')
+        
+        # Handle decimal numbers more carefully
+        # For phone numbers, we want to truncate to integer part (not round)
+        if '.' in phone_str:
+            try:
+                # Try to parse as float to check if it's a whole number
+                float_val = float(phone_str)
+                if float_val == int(float_val):  # It's a whole number
+                    # For whole numbers, just remove the decimal part without converting to int
+                    phone_str = phone_str.split('.')[0]
+                else:
+                    # It's a decimal number, truncate to integer part
+                    # But preserve the leading zero if it was there originally
+                    int_part = str(int(float_val))
+                    if starts_with_zero and not int_part.startswith('0'):
+                        # The int conversion removed the leading zero, add it back
+                        phone_str = '0' + int_part
+                    else:
+                        phone_str = int_part
+            except ValueError:
+                # If it's not a valid number, just remove the decimal part
+                phone_str = phone_str.split('.')[0]
+        
+        # Extract digits while preserving the original structure for 09 numbers
         digits = re.sub(r'\D', '', phone_str)
+        
+        # Special handling for 09 format numbers that might have lost their leading zero
+        # If the original string started with 0 and we have 10 digits, add the leading zero back
+        if starts_with_zero and len(digits) == 10:
+            digits = '0' + digits
+        
+        # Note: We do NOT convert 09 numbers to 63 - 09 is a valid Philippine format
+        # Only remove non-digit characters and handle decimal formats
+        
         return digits
     
     def replace_special_chars(self, text, track_replacements=False):
@@ -564,9 +625,19 @@ class CSVFormatterApp:
             def column_has_values(series):
                 if series is None:
                     return False
+                # Convert to string and strip whitespace
                 s = series.astype(str).str.strip()
+                # Remove NaN values
                 s = s[~series.isna()]
-                return s.ne('').any()
+                # Check for non-empty values, excluding common formula results that evaluate to empty
+                # This handles Google Sheets formulas that might return empty strings, 0, or other "empty" values
+                non_empty = s.ne('').any()
+                if non_empty:
+                    # Additional check: make sure we have actual meaningful content
+                    # Exclude values that are just "0", "0.0", or other numeric representations of empty
+                    meaningful_values = s[~s.isin(['0', '0.0', '0.00', 'nan', 'NaN', 'None', 'null'])]
+                    return len(meaningful_values) > 0
+                return False
             
             name_required = bool(name_col and name_col in df.columns and column_has_values(df[name_col]))
             date_required = bool(date_col and date_col in df.columns and column_has_values(df[date_col]))
@@ -576,7 +647,26 @@ class CSVFormatterApp:
             self.log(f"{'─'*60}\n")
             
             # Check for empty phone numbers BEFORE formatting
-            empty_phone_rows = df[df[phone_col].isna() | (df[phone_col].astype(str).str.strip() == '')]
+            # Handle Google Sheets formulas and decimal formats
+            def is_phone_empty(phone_value):
+                if pd.isna(phone_value):
+                    return True
+                phone_str = str(phone_value).strip()
+                if phone_str == '' or phone_str in ['0', '0.0', '0.00', 'nan', 'NaN', 'None', 'null']:
+                    return True
+                # Check if it's a decimal number that represents a whole number
+                if '.' in phone_str:
+                    try:
+                        float_val = float(phone_str)
+                        if float_val == int(float_val):  # It's a whole number with decimal
+                            # This is a valid phone number in decimal format, not empty
+                            return False
+                    except ValueError:
+                        pass
+                return False
+            
+            empty_phone_mask = df[phone_col].apply(is_phone_empty)
+            empty_phone_rows = df[empty_phone_mask]
             if len(empty_phone_rows) > 0:
                 self.log(f"VALIDATION FAILED: Found {len(empty_phone_rows)} empty phone number(s)\n")
                 self.log("Rows with empty phone numbers:")
@@ -612,14 +702,22 @@ class CSVFormatterApp:
                 )
                 return
             
-            # Fail if phone number is incomplete (too few digits after formatting)
+            # Fail if phone number is incomplete (must be 11 digits starting with 09 or 12 digits starting with 63)
             df_digits = df[phone_col].astype(str).apply(self.format_phone_number)
-            invalid_len_mask = df_digits.str.len() != 12
-            invalid_prefix_mask = ~df_digits.str.startswith('63')
-            invalid_mask = invalid_len_mask | invalid_prefix_mask
+            
+            # Check for valid Philippine phone number formats
+            def is_valid_ph_phone(digits):
+                if len(digits) == 11 and digits.startswith('09'):
+                    return True
+                elif len(digits) == 12 and digits.startswith('63'):
+                    return True
+                return False
+            
+            invalid_mask = ~df_digits.apply(is_valid_ph_phone)
             invalid_phone_rows = df[invalid_mask]
             if len(invalid_phone_rows) > 0:
-                self.log(f"VALIDATION FAILED: Found {len(invalid_phone_rows)} phone number(s) not matching required format (must be 12 digits starting with 63)\n")
+                self.log(f"VALIDATION FAILED: Found {len(invalid_phone_rows)} phone number(s) not matching required format\n")
+                self.log("Valid formats: 09xxxxxxxxx (11 digits) or 63xxxxxxxxxx (12 digits)")
                 self.log("Rows with invalid phone numbers:")
                 for idx in invalid_phone_rows.index:
                     row_num = idx + 2
@@ -627,16 +725,16 @@ class CSVFormatterApp:
                     digits = df_digits.loc[idx]
                     display_name = df.loc[idx, name_col] if name_col and name_col in df.columns else "N/A"
                     reason_parts = []
-                    if len(digits) != 12:
+                    if len(digits) not in [11, 12]:
                         reason_parts.append(f"len={len(digits)}")
-                    if not str(digits).startswith('63'):
-                        reason_parts.append("no '63' prefix")
+                    if not (digits.startswith('09') or digits.startswith('63')):
+                        reason_parts.append("invalid prefix")
                     reason = ", ".join(reason_parts) if reason_parts else "format"
                     self.log(f"  • Row {row_num}: {raw_phone} → {digits} ({reason}) (Name: {display_name})")
-                self.log("\nPhone numbers must be exactly 12 digits and start with '63'.")
+                self.log("\nPhone numbers must be 11 digits starting with '09' or 12 digits starting with '63'.")
                 messagebox.showwarning(
                     "Validation Failed",
-                    "Phone numbers must be exactly 12 digits and start with '63'. Please fix the highlighted rows and try again."
+                    "Phone numbers must be 11 digits starting with '09' or 12 digits starting with '63'. Please fix the highlighted rows and try again."
                 )
                 return
             
@@ -707,11 +805,12 @@ class CSVFormatterApp:
             self.log(f"PREVIEW OF CHANGES")
             self.log(f"{'─'*60}\n")
             
-            # Show headers information
+            # Show headers information with column type detection
             self.log(f"Headers found: {len(headers)}")
             for idx, header in enumerate(headers, 1):
                 non_empty_count = df[header].notna().sum()
-                self.log(f"  {idx}. {header} ({non_empty_count} records)")
+                column_type = self.detect_column_type(df[header])
+                self.log(f"  {idx}. {header} ({non_empty_count} records) - Type: {column_type}")
             self.log("")
             
             # Check for empty columns
@@ -728,10 +827,22 @@ class CSVFormatterApp:
             
             # Count phone numbers that will be formatted
             formatted_count = 0
+            decimal_format_count = 0
             self.log("Phone number formatting preview (showing first 5):")
             for idx, phone in enumerate(df[phone_col].head(5)):
+                original_phone = str(phone)
                 formatted = self.format_phone_number(phone)
-                if str(phone) != formatted:
+                
+                # Track special formatting cases
+                if '.' in original_phone:
+                    try:
+                        float_val = float(original_phone)
+                        if float_val == int(float_val):  # It's a whole number with decimal
+                            decimal_format_count += 1
+                    except ValueError:
+                        pass
+                
+                if original_phone != formatted:
                     self.log(f"  {phone} → {formatted}")
                     formatted_count += 1
                 else:
@@ -741,6 +852,11 @@ class CSVFormatterApp:
                 self.log(f"  ... and {len(df) - 5} more rows")
             
             self.log(f"\n✓ {len(df)} phone numbers will be formatted")
+            
+            # Show special formatting statistics
+            if decimal_format_count > 0:
+                self.log("Special formatting applied:")
+                self.log(f"  • {decimal_format_count} decimal format numbers (.0 suffix removed)")
             
             # Check for special characters
             special_char_count = 0
@@ -1056,9 +1172,35 @@ class CSVFormatterApp:
             
             # Format phone numbers
             self.log("Formatting phone numbers...")
-            df[phone_col] = df[phone_col].apply(self.format_phone_number)
+            
+            # Track special formatting cases during actual formatting
+            decimal_format_count = 0
+            
+            def format_and_track(phone):
+                nonlocal decimal_format_count
+                original = str(phone)
+                formatted = self.format_phone_number(phone)
+                
+                # Track special cases
+                if '.' in original:
+                    try:
+                        float_val = float(original)
+                        if float_val == int(float_val):  # It's a whole number with decimal
+                            decimal_format_count += 1
+                    except ValueError:
+                        pass
+                
+                return formatted
+            
+            df[phone_col] = df[phone_col].apply(format_and_track)
             formatted_count = len(df[df[phone_col] != ""])
-            self.log(f"✓ Formatted {formatted_count} phone numbers\n")
+            self.log(f"✓ Formatted {formatted_count} phone numbers")
+            
+            # Show special formatting statistics
+            if decimal_format_count > 0:
+                self.log("Special formatting applied:")
+                self.log(f"  • {decimal_format_count} decimal format numbers (.0 suffix removed)")
+            self.log("")
             
             # Replace special characters in all columns and track statistics
             self.log("Replacing special characters (accented letters, symbols, etc.)...")

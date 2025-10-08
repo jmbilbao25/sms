@@ -1,0 +1,16 @@
+Phone_63,Phone_09,Name,Date,Notes
+639976341596.0,09976341596.0,John Doe - Related numbers with .0,2024-01-01,Both formats with decimal
+639123456780.0,091234567890.0,Alice Smith - Ends with 0 naturally,2024-01-02,Both end with 0
+639999999999,099999999999,Jane Johnson - Perfect related numbers,2024-01-03,Clean formats
+639876543210,09876543210,Mike Brown - Another related pair,2024-01-04,Standard formats
+639123456789.5,091234567890.5,Carol Davis - Decimals with actual decimal,2024-01-05,Should truncate
+639123456780.25,091234567890.25,David Lee - Complex decimals,2024-01-06,Should truncate
+639123456789,091234567890,Emma White - Normal related numbers,2024-01-07,Standard case
+639123456780.1,091234567890.1,Frank Miller - Decimal ending in .1,2024-01-08,Should truncate
+639123456780.9,091234567890.9,George Taylor - Decimal ending in .9,2024-01-09,Should truncate
+0,0,Empty Row - Both empty,2024-01-10,Should be detected as empty
+0.0,0.0,Empty Row 2 - Both empty with decimal,2024-01-11,Should be detected as empty
+639123456789.0,091234567890.0,Helen Clark - Whole numbers with .0,2024-01-12,Should remove .0
+639123456780,091234567890,Isabel Garcia - Standard formats,2024-01-13,No changes needed
+639123456789.99,091234567890.99,Jack Wilson - High precision decimals,2024-01-14,Should truncate
+639123456780.01,091234567890.01,Karen Lee - Low precision decimals,2024-01-15,Should truncate
