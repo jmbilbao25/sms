@@ -26,9 +26,10 @@ except ImportError:
 class CSVFormatterApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("TechOps Text Blast List Formater v0.1")
-        self.root.geometry("500x850")
-        self.root.minsize(500, 850)  # Set minimum window size
+        self.version = "v0.2"
+        self.root.title("TechOps Text Blast List Formater v0.2")
+        self.root.geometry("550x850")
+        self.root.minsize(550, 850)  # Set minimum window size
         self.root.configure(bg="#f5f7fa")
         
         # Config file path
@@ -364,6 +365,18 @@ class CSVFormatterApp:
             state=tk.DISABLED
         )
         self.format_btn.pack(fill=tk.X, padx=20)
+
+        # Footer with version label (bottom-right)
+        footer_frame = tk.Frame(main_container, bg="#f5f7fa")
+        footer_frame.pack(fill=tk.X, pady=(0, 0))
+        self.version_label = tk.Label(
+            footer_frame,
+            text=self.version,
+            font=("Segoe UI", 8),
+            bg="#f5f7fa",
+            fg="#95a5a6"
+        )
+        self.version_label.pack(pady=(0, 4))
         
         # Store file path for processing
         self.current_file_path = None
