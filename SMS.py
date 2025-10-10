@@ -369,6 +369,8 @@ class CSVFormatterApp:
         self.current_file_path = None
         self.validation_passed = False
         self.preview_df = None
+        self.preview_before_df = None
+        self.preview_after_base_df = None
         
         # Hover effects
         self.setup_hover_effects()
@@ -392,6 +394,62 @@ class CSVFormatterApp:
         self.format_btn.bind("<Enter>", lambda e: on_enter(e, self.format_btn, "#229954"))
         self.format_btn.bind("<Leave>", lambda e: on_leave(e, self.format_btn, "#27ae60"))
     
+    def _is_formula_or_error(self, value):
+        """Return True if a spreadsheet cell contains a formula or an error token.
+
+        We treat any string beginning with '=' as a formula and common
+        spreadsheet error literals as artifacts to ignore.
+        """
+        if pd.isna(value):
+            return False
+        text = str(value).strip()
+        if text.startswith('='):
+            return True
+        error_tokens = {
+            '#VALUE!', '#DIV/0!', '#N/A', '#REF!', '#NAME?', '#NULL!',
+            '#NUM!', '#ERROR!', '#GETTING_DATA', '#SPILL!'
+        }
+        return text in error_tokens
+
+    def _clean_spreadsheet_artifacts(self, df):
+        """Remove rows that are clearly spreadsheet artifacts (formulas/errors).
+
+        Rules:
+        - If the phone column (first column) is a formula, an error token, or empty ⇒ drop row
+        - If all columns in a row are formulas/errors/empty whitespace ⇒ drop row
+        Returns the cleaned dataframe and a stats dict.
+        """
+        if df is None or df.empty:
+            return df, {"dropped": 0}
+
+        phone_col = df.columns[0]
+
+        def _is_empty_like(val):
+            if pd.isna(val):
+                return True
+            s = str(val).strip()
+            return s == '' or s.lower() in {"nan", "none", "null", '0', '0.0', '0.00'}
+
+        # Identify rows to drop
+        drop_mask = pd.Series(False, index=df.index)
+
+        # 1) Drop if phone column is formula/error/empty-like
+        drop_mask |= df[phone_col].apply(lambda v: self._is_formula_or_error(v) or _is_empty_like(v))
+
+        # 2) Drop if every cell in row is formula/error/empty-like
+        def _row_artifact(row):
+            for v in row:
+                if not (self._is_formula_or_error(v) or _is_empty_like(v)):
+                    return False
+            return True
+        drop_mask |= df.apply(_row_artifact, axis=1)
+
+        dropped = int(drop_mask.sum())
+        if dropped > 0:
+            df = df[~drop_mask].copy()
+
+        return df, {"dropped": dropped}
+
     def load_settings(self):
         """Load saved settings from config file"""
         try:
@@ -596,9 +654,16 @@ class CSVFormatterApp:
             self.log(f"File: {os.path.basename(file_path)}\n")
             
             
-            # Read CSV
-            df = pd.read_csv(file_path)
-            original_rows = len(df)
+            # Read CSV (keep original for preview BEFORE)
+            df_raw = pd.read_csv(file_path)
+            self.preview_before_df = df_raw.copy()
+
+            # Clean Google Sheets artifacts (formulas / error tokens) for validation and AFTER preview base
+            df, artifact_stats = self._clean_spreadsheet_artifacts(df_raw)
+            self.preview_after_base_df = df.copy()
+            if artifact_stats.get("dropped", 0) > 0:
+                self.log(f"✓ Ignored {artifact_stats['dropped']} artifact row(s) from formulas/errors")
+            original_rows = len(df_raw)
             self.log(f"✓ Loaded {original_rows} rows")
             
             # Get headers
@@ -619,6 +684,7 @@ class CSVFormatterApp:
             
             phone_col = df.columns[0]
             name_col = detect_column(headers, phone_col, r"\b(name|full\s*name|contact|recipient)\b")
+            last_name_col = detect_column(headers, phone_col, r"\b(last\s*name|surname|family\s*name)\b")
             date_col = detect_column(headers, phone_col, r"\b(date|send\s*date|scheduled?\s*date|dob|birth)\b")
             
             # A column is considered required only if it has at least one non-empty value anywhere
@@ -640,6 +706,7 @@ class CSVFormatterApp:
                 return False
             
             name_required = bool(name_col and name_col in df.columns and column_has_values(df[name_col]))
+            last_name_required = bool(last_name_col and last_name_col in df.columns and column_has_values(df[last_name_col]))
             date_required = bool(date_col and date_col in df.columns and column_has_values(df[date_col]))
             
             self.log(f"{'─'*60}")
@@ -653,6 +720,9 @@ class CSVFormatterApp:
                     return True
                 phone_str = str(phone_value).strip()
                 if phone_str == '' or phone_str in ['0', '0.0', '0.00', 'nan', 'NaN', 'None', 'null']:
+                    return True
+                # Treat formulas and error tokens as empty
+                if self._is_formula_or_error(phone_value):
                     return True
                 # Check if it's a decimal number that represents a whole number
                 if '.' in phone_str:
@@ -738,31 +808,38 @@ class CSVFormatterApp:
                 )
                 return
             
-            # Fail if a row has a phone number but missing required fields (only enforce for columns that have data elsewhere)
+            # Strict rule: Fail if any non-phone field in a row is missing/empty/formula/error
             phone_present = ~(df[phone_col].isna() | (df[phone_col].astype(str).str.strip() == ''))
-            invalid_rows_mask = pd.Series(False, index=df.index)
-            if name_required:
-                name_missing = (df[name_col].isna() | (df[name_col].astype(str).str.strip() == ''))
-                invalid_rows_mask = invalid_rows_mask | (phone_present & name_missing)
-            if date_required:
-                date_missing = (df[date_col].isna() | (df[date_col].astype(str).str.strip() == ''))
-                invalid_rows_mask = invalid_rows_mask | (phone_present & date_missing)
-            invalid_rows = df[invalid_rows_mask]
-            if len(invalid_rows) > 0:
-                self.log(f"VALIDATION FAILED: Found {len(invalid_rows)} row(s) with phone number but missing required fields\n")
-                for idx in invalid_rows.index:
+            def _is_empty_field(val):
+                if pd.isna(val):
+                    return True
+                if self._is_formula_or_error(val):
+                    return True
+                s = str(val).strip()
+                return s == '' or s in ['nan', 'NaN', 'None', 'null']
+
+            rows_with_missing = []
+            for idx in df.index:
+                if not phone_present.loc[idx]:
+                    continue
+                missing_in_row = []
+                for col in df.columns:
+                    if col == phone_col:
+                        continue
+                    if _is_empty_field(df.loc[idx, col]):
+                        missing_in_row.append(col)
+                if missing_in_row:
+                    rows_with_missing.append((idx, missing_in_row))
+
+            if rows_with_missing:
+                self.log(f"VALIDATION FAILED: Found {len(rows_with_missing)} row(s) with missing field(s)\n")
+                for idx, cols in rows_with_missing:
                     row_num = idx + 2
-                    missing_fields = []
-                    if name_required and (df.loc[idx, name_col] is None or str(df.loc[idx, name_col]).strip() == ''):
-                        missing_fields.append('Name')
-                    if date_required and (df.loc[idx, date_col] is None or str(df.loc[idx, date_col]).strip() == ''):
-                        missing_fields.append('Date')
-                    which = ' & '.join(missing_fields) if missing_fields else 'Unknown'
-                    self.log(f"  • Row {row_num}: missing {which}")
-                self.log("\nPlease fill in the missing required fields (columns that have values elsewhere) for rows that have a phone number.")
+                    self.log(f"  • Row {row_num}: missing {', '.join(cols)}")
+                self.log("\nPlease fill in all fields for rows that have a phone number.")
                 messagebox.showwarning(
                     "Validation Failed",
-                    f"Found {len(invalid_rows)} row(s) with a phone number but missing required fields (based on headers in use).\n\nPlease fix the file and try again."
+                    f"Found {len(rows_with_missing)} row(s) with missing field(s). Please complete all fields and try again."
                 )
                 return
             
@@ -897,7 +974,7 @@ class CSVFormatterApp:
 
             # self.log(f"\nClick 'Format File' to proceed or 'Preview Changes' to see before/after.\n")
             
-            # Store dataframe for preview
+            # Store dataframe for backward-compat preview usage (AFTER base)
             self.preview_df = df.copy()
             
             # Enable format button
@@ -914,7 +991,7 @@ class CSVFormatterApp:
     
     def show_preview(self):
         """Show before/after preview in a new window"""
-        if not self.validation_passed or self.preview_df is None:
+        if not self.validation_passed or self.preview_df is None or self.preview_before_df is None or self.preview_after_base_df is None:
             messagebox.showwarning("No File", "Please drag and drop a CSV file first.")
             return
         
@@ -1034,8 +1111,8 @@ class CSVFormatterApp:
         before_text.bind("<MouseWheel>", _on_mousewheel)
         after_text.bind("<MouseWheel>", _on_mousewheel)
 
-        # Populate BEFORE data (original)
-        df_before = self.preview_df.copy()
+        # Populate BEFORE data (original, includes formulas/errors)
+        df_before = self.preview_before_df.copy()
         before_text.insert("1.0", "Row | " + " | ".join(df_before.columns) + "\n")
         before_text.insert(tk.END, "─" * 80 + "\n")
         
@@ -1044,8 +1121,8 @@ class CSVFormatterApp:
             before_text.insert(tk.END, row_data + "\n")
         
         
-        # Populate AFTER data (formatted)
-        df_after = self.preview_df.copy()
+        # Populate AFTER data (formatted on cleaned base)
+        df_after = self.preview_after_base_df.copy()
         phone_col = df_after.columns[0]
         df_after[phone_col] = df_after[phone_col].apply(self.format_phone_number)
         
@@ -1064,18 +1141,52 @@ class CSVFormatterApp:
         # Highlight changed rows in BOTH panes with yellow background
         before_text.tag_configure("changed", background="#fff59d")
         after_text.tag_configure("changed", background="#fff59d")
-        max_rows_to_compare = min(len(df_before), len(df_after))
-        for i, idx in enumerate(df_before.index[:max_rows_to_compare]):
+
+        # Mark rows that will be removed (present in BEFORE but not in AFTER) with red tint
+        before_text.tag_configure("removed", background="#ffebee")
+
+        # Build a mapping of BEFORE absolute row order to whether it will be kept
+        # Rows removed include: formula/error rows and fully artifact rows
+        kept_indices = set(df_after.index)
+
+        # Show a legend to clarify colors
+        legend = tk.Label(
+            preview_window,
+            text="Legend: Removed (red), Changed (yellow)",
+            font=("Segoe UI", 9),
+            bg="#f5f7fa",
+            fg="#7f8c8d"
+        )
+        legend.pack(pady=(0, 6))
+
+        # Paint BEFORE lines accordingly
+        for i, idx in enumerate(df_before.index):
+            line_no = 3 + i  # header=1, separator=2, first row starts at line 3
+            if idx not in kept_indices:
+                before_text.tag_add("removed", f"{line_no}.0", f"{line_no}.end")
+            else:
+                # Additionally, detect value changes for kept rows and mark as changed
+                row_changed = False
+                for col in df_after.columns:
+                    before_val = df_before.loc[idx, col] if col in df_before.columns else None
+                    after_val = df_after.loc[idx, col] if col in df_after.columns else None
+                    if str(before_val) != str(after_val):
+                        row_changed = True
+                        break
+                if row_changed:
+                    before_text.tag_add("changed", f"{line_no}.0", f"{line_no}.end")
+
+        # Paint AFTER changed rows (all rows are kept here by definition)
+        for i, idx in enumerate(df_after.index):
             row_changed = False
             for col in df_after.columns:
-                before_val = df_before.loc[idx, col] if col in df_before.columns else None
-                after_val = df_after.loc[idx, col] if col in df_after.columns else None
+                before_val = df_before.loc[idx, col] if (col in df_before.columns and idx in df_before.index) else None
+                after_val = df_after.loc[idx, col]
                 if str(before_val) != str(after_val):
                     row_changed = True
                     break
             if row_changed:
-                line_no = 3 + i  # header=1, separator=2, first row starts at 3
-                before_text.tag_add("changed", f"{line_no}.0", f"{line_no}.end")
+                line_no = 3 + i
                 after_text.tag_add("changed", f"{line_no}.0", f"{line_no}.end")
 
         # Disable editing after applying highlights
@@ -1137,6 +1248,10 @@ class CSVFormatterApp:
             
             # Read CSV again
             df = pd.read_csv(self.current_file_path)
+            # Clean Google Sheets artifacts (formulas / error tokens)
+            df, artifact_stats = self._clean_spreadsheet_artifacts(df)
+            if artifact_stats.get("dropped", 0) > 0:
+                self.log(f"✓ Ignored {artifact_stats['dropped']} artifact row(s) from formulas/errors")
             phone_col = df.columns[0]
 
             # Additional artificial checks with randomized, faster durations (single-line updates)
